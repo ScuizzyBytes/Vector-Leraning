@@ -1,0 +1,90 @@
+import random
+import pygame
+
+
+# 1. Наш идеальный трехмерный векторный класс
+class Vector3D:
+
+  def __init__(self, x=0.0, y=0.0, z=0.0):
+    self.x = float(x)
+    self.y = float(y)
+    self.z = float(z)
+
+  def __repr__(self):
+    return f"Vector3D({self.x}, {self.y}, {self.z})"
+
+  def __add__(self, other):
+    return Vector3D(self.x + other.x, self.y + other.y, self.z + other.z)
+
+  def __sub__(self, other):
+    return Vector3D(self.x - other.x, self.y - other.y, self.z - other.z)
+
+  def length(self):
+    return (self.x**2 + self.y**2 + self.z**2) ** 0.5
+
+
+# 2. Инициализация графического движка
+pygame.init()
+WIDTH, HEIGHT = 900, 700
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("3D Vector Space Warp")
+clock = pygame.time.Clock()
+
+# Центр экрана для проекции перспективы
+CX = WIDTH / 2
+CY = HEIGHT / 2
+
+# 3. Создаем галактику из звёзд в 3D пространстве
+stars = []
+for _ in range(500):
+  stars.append({
+      "pos": Vector3D(
+          random.randint(-450, 450),
+          random.randint(-350, 350),
+          random.randint(100, 900),  # Начальная глубина Z
+      ),
+      "vel": Vector3D(0, 0, -3.5),  # Скорость полета на наблюдателя
+      "color": (  # Красивые неоновые оттенки сине-фиолетового спектра
+          random.randint(100, 180),
+          random.randint(180, 255),
+          255,
+      ),
+  })
+
+# 4. Главный игровой цикл
+running = True
+while running:
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+      running = False
+
+  # Глубокий космический фон
+  screen.fill((6, 6, 15))
+
+  for star in stars:
+    # Движение в 3D в одно действие благодаря Vector3D
+    star["pos"] = star["pos"] + star["vel"]
+
+    # Если звезда пролетела сквозь «камеру», возвращаем её вдаль
+    if star["pos"].z <= 0:
+      star["pos"].z = 900
+      star["pos"].x = random.randint(-450, 450)
+      star["pos"].y = random.randint(-350, 350)
+
+    # Формула перспективы: превращаем 3D координаты в плоский экран
+    k = 350 / star["pos"].z
+    screen_x = int(star["pos"].x * k + CX)
+    screen_y = int(star["pos"].y * k + CY)
+
+    # Отрисовка, если звезда в пределах видимости монитора
+    if 0 <= screen_x < WIDTH and 0 <= screen_y < HEIGHT:
+      # Размер и яркость зависят от глубины (Z)
+      radius = max(1, int(k * 2.0))
+      pygame.draw.circle(
+          screen, star["color"], (screen_x, screen_y), radius
+      )
+
+  pygame.display.flip()
+  clock.tick(60)
+
+pygame.quit()
